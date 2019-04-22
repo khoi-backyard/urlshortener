@@ -34,12 +34,19 @@ func main() {
 	runFlagSet := flag.NewFlagSet("run", flag.ExitOnError)
 	runPort := runFlagSet.Int("p", 8080, "port of the server")
 
+	configureFlagSet := flag.NewFlagSet("configure", flag.ExitOnError)
+	addingKey := configureFlagSet.String("a", "", "the key")
+	addingURL := configureFlagSet.String("u", "", "the url")
+
 	listFlag := flag.Bool("l", false, "list the url mapping")
 	helpFlag := flag.Bool("h", false, "print the help message")
+	deleteFlag := flag.String("d", "", "delete an entry using key")
 
 	switch os.Args[1] {
 	case "run":
 		runFlagSet.Parse(os.Args[2:])
+	case "configure":
+		configureFlagSet.Parse(os.Args[2:])
 	default:
 		flag.Parse()
 	}
@@ -53,6 +60,21 @@ func main() {
 		return
 	}
 
+	// Configure subcommand
+	if configureFlagSet.Parsed() {
+		if *addingKey == "" || *addingURL == "" {
+			printHelp()
+			os.Exit(1)
+		}
+		urlMap[*addingKey] = *addingURL
+
+		if err := writeURLMappingToFile(urlMap, configFile); err != nil {
+			exitWithError(err)
+		}
+
+		return
+	}
+
 	if flag.Parsed() {
 		if *listFlag {
 			printURLMapping(urlMap)
@@ -60,6 +82,15 @@ func main() {
 		}
 		if *helpFlag {
 			printHelp()
+			return
+		}
+		if *deleteFlag != "" {
+			delete(urlMap, *deleteFlag)
+
+			if err := writeURLMappingToFile(urlMap, configFile); err != nil {
+				exitWithError(err)
+			}
+
 			return
 		}
 	}
@@ -75,6 +106,20 @@ func redirectionHandler(urlMap map[string]string) func(http.ResponseWriter, *htt
 		}
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	}
+}
+
+func writeURLMappingToFile(urlMap map[string]string, filePath string) error {
+	b, err := yaml.Marshal(urlMap)
+
+	if err != nil {
+		return err
+	}
+
+	if err := ioutil.WriteFile(filePath, b, 0644); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func printURLMapping(urlMap map[string]string) {
