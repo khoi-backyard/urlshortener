@@ -15,7 +15,7 @@ const configFile = "./config.yml"
 
 func main() {
 	if len(os.Args) == 1 {
-		fmt.Println("Invalid syntax. Check manual")
+		printHelp()
 		return
 	}
 
@@ -35,6 +35,7 @@ func main() {
 	runPort := runFlagSet.Int("p", 8080, "port of the server")
 
 	listFlag := flag.Bool("l", false, "list the url mapping")
+	helpFlag := flag.Bool("h", false, "print the help message")
 
 	switch os.Args[1] {
 	case "run":
@@ -57,6 +58,10 @@ func main() {
 			printURLMapping(urlMap)
 			return
 		}
+		if *helpFlag {
+			printHelp()
+			return
+		}
 	}
 
 }
@@ -76,6 +81,22 @@ func printURLMapping(urlMap map[string]string) {
 	for k, v := range urlMap {
 		fmt.Printf("%v - %v\n", k, v)
 	}
+}
+
+func printHelp() {
+	fmt.Printf("urlshortener\n\n")
+
+	fmt.Println("To add new entry:")
+	fmt.Println("\t urlshortener configure -a dogs -u www.dogs.com")
+
+	fmt.Println("To delete an entry:")
+	fmt.Println("\t urlshortener -d dogs")
+
+	fmt.Println("To list all entries:")
+	fmt.Println("\t urlshortener -l")
+
+	fmt.Println("To start the server:")
+	fmt.Println("\t urlshortener run -p 8080")
 }
 
 func exitWithError(err error) {
